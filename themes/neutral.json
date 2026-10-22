@@ -1,0 +1,19 @@
+{
+  "name": "neutral",
+  "headlineDot": false,
+  "fontSans": "system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+  "fontMono": "ui-monospace, \"SF Mono\", Menlo, Consolas, \"Liberation Mono\", monospace",
+  "fontFiles": [],
+  "light": {
+    "bg": "#f6f7f8", "surface": "#ffffff", "raise": "#eceff2", "ink": "#16191d", "muted": "#4f5761", "faint": "#8a929c", "line": "#d9dee3",
+    "accent": "#1f6feb", "accent-ink": "#1858bd",
+    "c1": "#a15c07", "c2": "#1f6feb", "c3": "#1e7a4a", "c4": "#5b4fa8", "c5": "#a23b72", "c6": "#4f6b7a",
+    "pos": "#1e7a4a", "neg": "#b42318", "neg-soft": "#fbe7e5", "warn-soft": "#fbf0dc"
+  },
+  "dark": {
+    "bg": "#0f1114", "surface": "#171a1e", "raise": "#20242a", "ink": "#eef1f4", "muted": "#a6aeb8", "faint": "#717a85", "line": "#2d333a",
+    "accent": "#4c8dff", "accent-ink": "#7aa9ff",
+    "c1": "#e0a24a", "c2": "#4c8dff", "c3": "#4fb07a", "c4": "#9d93e0", "c5": "#e07ab0", "c6": "#8fb0c2",
+    "pos": "#4fb07a", "neg": "#f0857a", "neg-soft": "#2e1a18", "warn-soft": "#2c2416"
+  }
+}

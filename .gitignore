@@ -1,0 +1,11 @@
+# Built pages stay out: they are generated, and a page built with a custom theme can carry
+# that theme's font files inside it. Build the example yourself (see README.md).
+*.html
+!engine/shell.html
+
+# checker output and its setup
+check/
+node_modules/
+
+__pycache__/
+.DS_Store

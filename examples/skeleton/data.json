@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "title": "Library Book Holds",
+    "eyebrow": "Example diagram, made-up data",
+    "headline": "From a search to a book on the shelf at home",
+    "stats": ["ready in **2 days** on average", "holds kept **7 days**"],
+    "source": "Source: a made-up library, written to show every part of the format."
+  },
+  "tabs": [
+    {
+      "id": "flow",
+      "label": "What a reader goes through",
+      "type": "journey",
+      "hint": "Across: what happens to a hold. Down: who does each part.",
+      "labels": { "where": "Where it lives", "none": "The source names nothing to build for this." },
+      "panel": {
+        "title": "What a reader goes through",
+        "text": [
+          "A reader asks for a book, the library holds a copy, tells them it is ready, and they pick it up.",
+          "Click a box to read what it is. The boxes it connects to light up."
+        ]
+      },
+      "tagLegend": [
+        { "text": "waits on", "tone": "wait", "meaning": "needs work in flight elsewhere." },
+        { "text": "not built", "tone": "gap", "meaning": "is needed and nothing does it yet." }
+      ],
+      "spans": [{ "label": "Online", "from": 1, "to": 3 }, { "label": "At the desk", "from": 4, "to": 5, "tone": "quiet" }],
+      "stages": [
+        { "id": "ask", "name": "Ask", "sub": "search and request", "foot": ["request received"] },
+        { "id": "hold", "name": "Hold", "sub": "a copy is set aside" },
+        { "id": "tell", "name": "Notice", "sub": "they hear it is ready", "foot": ["ready email", "ready text"] },
+        { "id": "pick", "name": "Pick up", "sub": "at the desk" },
+        { "id": "back", "name": "Return", "sub": "due in 21 days", "foot": ["due-soon email"] }
+      ],
+      "lanes": [
+        { "id": "reader", "name": "The reader", "sub": "What they click and do.", "color": "c1", "none": "Nothing to build. The reader does this." },
+        { "id": "system", "name": "The catalogue", "sub": "Runs by itself.", "color": "c3" },
+        { "id": "staff", "name": "Desk staff", "sub": "A person does it.", "color": "c4" }
+      ],
+      "foot": {
+        "label": "Messages sent",
+        "empty": "none",
+        "panel": { "tag": { "text": "Messages", "color": "c4" }, "title": "What the reader is sent", "text": "Each message goes to the email and phone on the library card." }
+      },
+      "items": [
+        { "id": "search", "stage": "ask", "lane": "reader", "text": "Finds the book and presses Hold",
+          "plain": "The reader searches the catalogue and presses Hold on a title.", "links": ["queue"] },
+        { "id": "queue", "stage": "ask", "lane": "system", "text": "Puts them in the queue for that title",
+          "plain": "The catalogue adds the reader to the end of the title's queue.",
+          "refs": ["n-queue"], "where": ["holds table, one row per request"], "notes": ["A reader can hold 10 titles at once."] },
+        { "id": "pickcopy", "stage": "hold", "lane": "system", "text": "Picks a copy and sets it aside",
+          "plain": "When a copy is returned, the catalogue gives it to the first reader in the queue.",
+          "refs": ["n-queue"],
+          "parts": [
+            { "title": "Chooses the copy", "text": "The nearest branch with a copy on the shelf comes first." },
+            { "title": "Moves it between branches", "tone": "wait", "label": "Waits on", "text": "The van schedule, which is being changed." }
+          ],
+          "tag": { "text": "waits on the van schedule", "tone": "wait" }, "links": ["queue", "shelf"] },
+        { "id": "shelf", "stage": "hold", "lane": "staff", "text": "Puts it on the holds shelf",
+          "plain": "Staff scan the copy and put it on the holds shelf under the reader's name." },
+        { "id": "notice", "stage": "tell", "lane": "system", "text": "Tells the reader it is ready",
+          "plain": "An email and a text go out as soon as the copy is scanned onto the shelf.",
+          "refs": ["n-notice"], "links": ["shelf", "collect"] },
+        { "id": "app", "stage": "tell", "lane": "reader", "text": "Sees it in the app", "optional": true,
+          "plain": "Readers with the app also see the hold marked Ready." },
+        { "id": "collect", "stage": "pick", "lane": "reader", "text": "Collects it within 7 days",
+          "plain": "The reader shows their card at the desk and takes the book." },
+        { "id": "lapse", "stage": "pick", "lane": "system", "text": "Passes it on after 7 days",
+          "plain": "If nobody collects it in 7 days, the copy goes to the next reader in the queue.",
+          "tag": { "text": "not built", "tone": "gap" },
+          "callouts": [{ "label": "Not built yet", "text": "Today staff do this by hand each Monday.", "tone": "gap" }] },
+        { "id": "due", "stage": "back", "lane": "system", "text": "Reminds them 2 days before it is due",
+          "plain": "A due-soon email goes out 2 days before the return date." },
+        { "id": "return", "stage": "back", "lane": "reader", "text": "Returns it at any branch",
+          "plain": "Any branch takes it back; the catalogue then serves the next hold." }
+      ],
+      "edges": {
+        "label": "When it goes another way",
+        "items": [
+          { "id": "e-limit", "text": "Already holding 10 titles", "outcome": "the Hold button explains the limit", "links": ["queue"] },
+          { "id": "e-lost", "text": "The copy is lost", "outcome": "the next copy is used", "detail": "Staff mark it lost, and the catalogue picks another copy.", "links": ["pickcopy"] }
+        ]
+      },
+      "flagsTitle": "Found while drawing this",
+      "flags": [
+        { "n": 1, "h": "Two hold periods", "p": "The help page says holds are kept 7 days; the email says 5. One of them is out of date.", "src": "Found while drawing this" }
+      ]
+    },
+    {
+      "id": "build",
+      "label": "Build plan",
+      "type": "page",
+      "title": "Build plan",
+      "lede": "Two pieces, then the change goes live.",
+      "panel": { "title": "Build plan", "text": "Click a box for its changes." },
+      "labels": { "refBy": "Boxes that use it" },
+      "sections": [
+        { "type": "graph", "aria": "Build plan", "lanes": ["Waiting on", "Can start now", "Go live"],
+          "divider": { "beforeRow": 2, "label": "Also needed" },
+          "nodes": [
+            { "id": "n-van", "title": "New van schedule", "sub": "transport team", "lane": 0, "row": 0, "style": "ext",
+              "panel": { "text": "The new schedule moves books between branches daily instead of twice a week." } },
+            { "id": "n-queue", "title": "1. Queue rules", "sub": "catalogue, 2 changes", "lane": 1, "row": 0, "refLabel": "Piece 1: Queue rules", "refSub": "catalogue",
+              "panel": { "text": "**Needs:** the new van schedule.", "sections": [{ "title": "Changes", "bullets": [{ "text": "Nearest copy first", "sub": "holds/pick.py" }, { "text": "Pass on after 7 days", "sub": "holds/lapse.py" }] }] } },
+            { "id": "n-notice", "title": "2. Ready messages", "sub": "messages, 1 change", "lane": 1, "row": 1, "refLabel": "Piece 2: Ready messages", "refSub": "messages",
+              "panel": { "sections": [{ "title": "Changes", "bullets": [{ "text": "Send the text with the email", "sub": "notify/ready.py" }] }] } },
+            { "id": "n-live", "title": "Go live", "sub": "a Tuesday", "lane": 2, "row": 0, "rows": 2, "style": "gate", "lines": ["Turn it on for one branch"],
+              "panel": { "text": "Turn the new rules on for one branch first." } },
+            { "id": "n-signs", "title": "New desk signs", "sub": "holds up: the launch", "lane": 0, "row": 2, "style": "ext",
+              "panel": { "text": "Printed signs that explain the 7-day hold." } }
+          ],
+          "edges": [{ "from": "n-van", "to": "n-queue", "dashed": true }, { "from": "n-queue", "to": "n-live" }, { "from": "n-notice", "to": "n-live" }] },
+        { "type": "checklist", "title": "The plan", "items": ["Queue rules", "Ready messages", { "text": "**Go live:** one branch, then all", "go": true }] },
+        { "type": "pills", "title": "Later", "items": ["Holds on e-books", "Pick-up lockers"] }
+      ]
+    },
+    {
+      "id": "numbers",
+      "label": "Numbers",
+      "type": "page",
+      "title": "Numbers",
+      "lede": "Every section type, with made-up figures.",
+      "sections": [
+        { "type": "meter", "title": "Holds per reader", "left": "**10** at once", "right": "example: 4 held", "fill": { "pct": 40, "color": "c3" },
+          "ticks": [{ "at": 0, "label": "0", "sub": "none", "mark": false }, { "at": 80, "label": "8", "sub": "a warning" }, { "at": 100, "label": "10", "sub": "the limit" }] },
+        { "type": "stats", "title": "Last month", "items": [{ "big": "1,240", "text": "holds placed" }, { "big": "2 days", "text": "average wait" }, { "big": "6%", "text": "never collected" }] },
+        { "type": "table", "title": "Branches", "columns": ["Branch", "Lockers", "Holds", "Change"],
+          "rows": [
+            { "id": "r-main", "label": "Main", "cells": [{ "text": "Main", "b": true }, { "text": "yes", "dot": { "color": "pos" } }, { "text": "720", "mono": true }, { "text": "+12%", "mono": true, "tone": "pos" }],
+              "panel": { "title": "Main branch", "text": "The busiest branch, with the only lockers." } },
+            { "cells": [{ "text": "North", "b": true }, { "text": "no", "dot": { "color": "faint", "hollow": true } }, { "text": "520", "mono": true }, { "text": "-3%", "mono": true, "tone": "neg" }] }
+          ],
+          "note": "Click the Main row for more." },
+        { "type": "bars", "title": "Holds by branch", "items": [{ "label": "Main", "value": 720, "note": "with lockers", "color": "c3" }, { "label": "North", "value": 520, "color": "c4" }],
+          "takeaways": ["Main takes **58%** of holds."] },
+        { "type": "cards", "title": "What a hold records", "items": [{ "title": "Reader", "text": "the card number" }, { "title": "Title", "text": "not a copy" }, { "title": "Branch", "text": "where to pick up" }] },
+        { "type": "defs", "title": "Decided", "items": [{ "b": "No fines for late pick-up.", "text": "The hold passes on instead." }] },
+        { "type": "prose", "title": "Why 7 days", "paragraphs": ["Most readers collect within 3 days, and 7 leaves room for a weekend."] },
+        { "type": "flags", "items": [{ "h": "No data on lockers yet", "p": "The lockers opened last week, so their numbers are not in here.", "src": "Example flag" }] }
+      ]
+    }
+  ]
+}
