@@ -10,6 +10,7 @@ names the field. Warnings print and do not stop it, unless --strict is set.
 """
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -722,7 +723,11 @@ STANDALONE_HEAD = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="ut
 
 
 def standalone(page):
-    """Wrap the page in a full document: title and style go in <head>; the claude meta is dropped."""
+    """Wrap the page in a full document: title and style go in <head>; the claude meta is dropped.
+
+    A strict Content-Security-Policy is added: only the page's own inline scripts run (pinned by
+    hash), styles and data: fonts are allowed, and nothing may be loaded from the network.
+    """
     head = []
     for pat in (r'\s*<title>.*?</title>', r'\s*<meta name="claude:[^"]*" content="[^"]*">', r'\s*<style>.*?</style>'):
         m = re.match(pat, page, re.S)
@@ -730,6 +735,11 @@ def standalone(page):
             if 'claude:' not in m.group(0):
                 head.append(m.group(0).strip())
             page = page[m.end():]
+    hashes = ' '.join("'sha256-%s'" % base64.b64encode(hashlib.sha256(src.encode('utf-8')).digest()).decode('ascii')
+                      for src in re.findall(r'<script>(.*?)</script>', page, re.S))
+    csp = ("default-src 'none'; script-src %s; style-src 'unsafe-inline'; img-src data:; font-src data:; "
+           "base-uri 'none'; form-action 'none'" % hashes)
+    head.insert(0, '<meta http-equiv="Content-Security-Policy" content="%s">' % csp)
     return (STANDALONE_HEAD + '\n'.join(head) + '\n</head>\n<body>\n' + page.lstrip('\n') + '\n</body>\n</html>\n')
 
 

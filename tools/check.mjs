@@ -8,13 +8,14 @@
 // and phone width, plus the longest open panel on each tab. Exit code 1 on any problem.
 //
 // Needs Node 18+, playwright-core and a Chromium of the revision that playwright-core release
-// expects. Setup, once: see SKILL.md. Overrides: SD_PLAYWRIGHT (the playwright-core folder),
-// CHROME_PATH (a Chromium binary), PLAYWRIGHT_BROWSERS_PATH (where Playwright put its browsers).
+// expects. Setup, once: `npm ci` and `npx playwright-core install chromium` in this tools/ folder
+// (see README.md). Overrides: SD_PLAYWRIGHT (the playwright-core folder), CHROME_PATH (a
+// Chromium binary), PLAYWRIGHT_BROWSERS_PATH (where Playwright put its browsers).
 import { createRequire } from 'node:module'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 
 const [file, outArg] = process.argv.slice(2)
 if (!file) { console.error('usage: node check.mjs index.html [outdir]'); process.exit(2) }
@@ -22,10 +23,12 @@ const out = path.resolve(outArg || path.join(path.dirname(path.resolve(file)), '
 fs.mkdirSync(out, { recursive: true })
 
 const require = createRequire(import.meta.url)
-const pwPath = process.env.SD_PLAYWRIGHT || path.join(os.homedir(), '.cache/system-diagram-check/node_modules/playwright-core')
+// the locked install next to this file first, then the older shared install in ~/.cache
+const here = path.dirname(fileURLToPath(import.meta.url))
+const pwPath = process.env.SD_PLAYWRIGHT || [path.join(here, 'node_modules/playwright-core'), path.join(os.homedir(), '.cache/system-diagram-check/node_modules/playwright-core')].find((p) => fs.existsSync(p)) || path.join(here, 'node_modules/playwright-core')
 let chromium
 try { ({ chromium } = require(pwPath)) } catch {
-  console.error(`playwright-core not found at ${pwPath}.\nSetup: mkdir -p ~/.cache/system-diagram-check && cd ~/.cache/system-diagram-check && npm init -y && npm i playwright-core@1.48.2 && npx playwright-core install chromium`)
+  console.error(`playwright-core not found at ${pwPath}.\nSetup: cd ${here} && npm ci && npx playwright-core install chromium`)
   process.exit(2)
 }
 
@@ -60,7 +63,7 @@ const url = pathToFileURL(pageFile).href
 
 let browser
 try { browser = await chromium.launch({ executablePath: findChrome() }) } catch (e) {
-  console.error(`Could not start Chromium: ${e.message.split('\n')[0]}\nInstall it with: cd ~/.cache/system-diagram-check && npx playwright-core install chromium\n(on Linux add --with-deps), or set CHROME_PATH to a Chromium binary.`)
+  console.error(`Could not start Chromium: ${e.message.split('\n')[0]}\nInstall it with: cd ${here} && npx playwright-core install chromium\n(on Linux add --with-deps), or set CHROME_PATH to a Chromium binary.`)
   process.exit(2)
 }
 const report = { errors: [], clicked: 0, followed: 0, notClickable: [], emptyPanels: [], deadTabs: [], overflow: [], info: [], shots: [] }
