@@ -1,5 +1,8 @@
 # system-diagram
 
+[![check](https://github.com/amdahlco/system-diagram/actions/workflows/check.yml/badge.svg)](https://github.com/amdahlco/system-diagram/actions/workflows/check.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/amdahlco/system-diagram/badge)](https://scorecard.dev/viewer/?uri=github.com/amdahlco/system-diagram)
+
 A Claude Code skill that turns a spec, plan, PRD, design doc or a running system into one
 interactive diagram page. The page is a grid: the steps go across, and who does each part goes
 down. Click any box to open a side panel with a plain sentence first and the technical detail
