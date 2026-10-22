@@ -4,6 +4,6 @@
   "description": "The one dependency of tools/check.mjs, locked so every install gets the same files.",
   "license": "MIT",
   "dependencies": {
-    "playwright-core": "1.48.2"
+    "playwright-core": "1.64.1"
   }
 }
