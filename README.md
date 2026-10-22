@@ -73,7 +73,8 @@ node tools\check.mjs $env:TEMP\x.html $env:TEMP\check
 ```
 
 The build prints `0 warnings`. The checker prints `0 script errors, 0 empty panels, 0 could not be
-clicked, 0 dead tabs, 0 overflow` and saves screenshots in `/tmp/check`. To open the page in a
+clicked, 0 dead tabs, 0 overflow` and saves screenshots in `/tmp/check`. It may also print an
+`info:` line saying the grid scrolls sideways on a phone; that is by design. To open the page in a
 browser yourself, add `--standalone` to the build command.
 
 ## Use it
@@ -103,6 +104,11 @@ licence allows it. The theme format is in `references/schema.md`.
 - `references/schema.md`: every field of the data file, and the theme format.
 - `references/judge.md`: the prompt for an independent check of a diagram against its source.
 - `examples/skeleton/`: a short made-up example that uses every feature. Start from this one.
+
+## Contributing
+
+Issues and pull requests are welcome. See `CONTRIBUTING.md`. To report a security problem, see
+`SECURITY.md`.
 
 ## Licence
 
