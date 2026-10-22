@@ -36,7 +36,7 @@ no design system, no account. Building a page needs no network.
    macOS and Linux:
 
    ```bash
-   mkdir -p ~/.cache/system-diagram-check && cd ~/.cache/system-diagram-check && npm init -y && npm i playwright-core@1.48.2 && npx playwright-core install chromium
+   cd ~/.claude/skills/system-diagram/tools && npm ci && npx playwright-core install chromium
    ```
 
    This downloads Chromium (about 150 MB) once. On Linux, use
@@ -46,8 +46,11 @@ no design system, no account. Building a page needs no network.
    Windows (PowerShell):
 
    ```powershell
-   mkdir ~\.cache\system-diagram-check; cd ~\.cache\system-diagram-check; npm init -y; npm i playwright-core@1.48.2; npx playwright-core install chromium
+   cd $HOME\.claude\skills\system-diagram\tools; npm ci; npx playwright-core install chromium
    ```
+
+   `npm ci` installs the exact version locked in `tools/package-lock.json`, checked against its
+   hash.
 
    No Node? The skill still builds pages; Claude then asks you to open the page and click
    through it instead of running the checker.

@@ -40,7 +40,7 @@ same command. Nothing else is needed: no fonts, no network, no design system.
    problems. Then look at `desktop-light-<first tab>.png`, `phone-light-<first tab>.png` and the
    `panel-<tab>.png` files (the longest open panel on each tab).
    Setup, once per machine:
-   `mkdir -p ~/.cache/system-diagram-check && cd ~/.cache/system-diagram-check && npm init -y && npm i playwright-core@1.48.2 && npx playwright-core install chromium`
+   `cd <skill>/tools && npm ci && npx playwright-core install chromium`
    (on Linux, `install --with-deps chromium`). If Node cannot be installed, build with
    `--standalone`, open the page in a browser and click through every tab yourself instead.
 6. **Check it against the source.** Run the source rules' self-check below. For a diagram other

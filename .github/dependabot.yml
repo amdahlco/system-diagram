@@ -1,0 +1,19 @@
+# Keeps the pinned actions and the checker's locked dependency current. A new release must be at
+# least a week old before Dependabot proposes it.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /tools
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
