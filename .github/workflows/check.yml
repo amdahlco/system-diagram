@@ -1,0 +1,48 @@
+# Builds the example and runs the checker on every pull request and every push to main.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build the example
+        run: |
+          python3 build.py examples/skeleton/data.json --strict --out "$RUNNER_TEMP/page.html"
+          python3 build.py examples/skeleton/data.json --strict --standalone --out "$RUNNER_TEMP/page-standalone.html"
+
+      - name: Set up the checker
+        run: |
+          mkdir -p ~/.cache/system-diagram-check && cd ~/.cache/system-diagram-check
+          npm init -y > /dev/null
+          npm i playwright-core@1.48.2
+          npx playwright-core install --with-deps chromium
+
+      - name: Run the checker
+        run: |
+          node tools/check.mjs "$RUNNER_TEMP/page.html" "$RUNNER_TEMP/check"
+          node tools/check.mjs "$RUNNER_TEMP/page-standalone.html" "$RUNNER_TEMP/check-standalone"
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checker-screenshots
+          path: ${{ runner.temp }}/check*
+          if-no-files-found: ignore
