@@ -1,6 +1,6 @@
 ---
 name: system-diagram
-description: Turn a spec, plan, PRD, Notion page, design doc or a running system into an interactive diagram page: one self-contained HTML file, published as a claude.ai Artifact where that tool exists. The page has a grid of steps (across) by who does each part (down), a side panel that opens every box with a plain sentence first and the technical detail after, and optional pages for a build plan, tables, numbers and open questions. Use when someone says "turn this into a visual diagram", "map this spec", "diagram this Notion page", "make a system map", "visualize this flow", or asks to update, simplify or reflect source changes in a diagram made this way.
+description: 'Turn a spec, plan, PRD, Notion page, design doc or a running system into an interactive diagram page: one self-contained HTML file, published as a claude.ai Artifact where that tool exists. The page has a grid of steps (across) by who does each part (down), a side panel that opens every box with a plain sentence first and the technical detail after, and optional pages for a build plan, tables, numbers and open questions. Use when someone says "turn this into a visual diagram", "map this spec", "diagram this Notion page", "make a system map", "visualize this flow", or asks to update, simplify or reflect source changes in a diagram made this way.'
 ---
 
 # system-diagram
