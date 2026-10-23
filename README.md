@@ -14,22 +14,35 @@ published as an Artifact; otherwise you get the HTML file.
 
 ## Install
 
-You need `python3`, and Node.js 20 or later with npm. Nothing else: no fonts, no design system,
-no account. Building a page needs no network.
+You need `python3`. The checker needs Node 18 or newer, with npm, and the one-command install
+below needs Node 20 or newer. Nothing else: no fonts, no design system, no account. Building a
+page needs no network.
 
-1. Add the skill with Amdahl's installer:
+1. Add the skill, whichever way suits you:
 
-   ```bash
-   npx amdahl skills add amdahl/system-diagram -g
-   ```
+   - **Ask your agent.** Open
+     [amdahl.ai/skills/amdahl/system-diagram](https://amdahl.ai/skills/amdahl/system-diagram) and
+     hand your agent the prompt there. It installs the skill for you.
+   - **One command.** It downloads the skill from amdahl.ai, checks it against the checksum
+     amdahl.ai lists, and puts it in `~/.claude/skills/system-diagram`, for every project. Add
+     `--agents` to also put it in `.agents/skills`, for Codex, Cursor and other agents.
 
-   It downloads the skill from
-   [amdahl.ai/skills/amdahl/system-diagram](https://amdahl.ai/skills/amdahl/system-diagram),
-   checks it against the checksum amdahl.ai lists, and puts it in
-   `~/.claude/skills/system-diagram`, for every project. Leave out `-g` and, in a terminal, it
-   asks you to pick this project or every project. Add `--agents` to also put it in
-   `.agents/skills`, for Codex, Cursor and other agents. The same command works in Windows
-   PowerShell, where `~` is `$HOME`.
+     ```bash
+     npx amdahl skills add amdahl/system-diagram -g
+     ```
+
+   - **Git.** Clone this repo into your Claude Code skills folder. If that folder already exists,
+     move it away first.
+
+     ```bash
+     git clone https://github.com/amdahlco/system-diagram.git ~/.claude/skills/system-diagram
+     ```
+
+     Windows (PowerShell):
+
+     ```powershell
+     git clone https://github.com/amdahlco/system-diagram.git $HOME\.claude\skills\system-diagram
+     ```
 
 2. Set up the checker. Do this once per machine.
 
@@ -52,15 +65,13 @@ no account. Building a page needs no network.
    `npm ci` installs the exact version locked in `tools/package-lock.json`, checked against its
    hash.
 
+   No Node? The skill still builds pages; Claude then asks you to open the page and click
+   through it instead of running the checker.
+
 3. Start a new Claude Code session. The skill loads when you ask for it.
 
-To get updates later, run the same command with `--force`:
-`npx amdahl skills add amdahl/system-diagram -g --force`. It replaces the whole folder, so set up
-the checker again after it.
-
-No Node? Clone this repo into `~/.claude/skills/system-diagram` instead. The skill still builds
-pages; Claude then asks you to open the page and click through it instead of running the checker.
-To work on the skill itself, see `CONTRIBUTING.md`.
+To get updates later, run the same `npx` command with `--force`, then set up the checker again
+(it replaces the whole folder). For a clone: `git -C ~/.claude/skills/system-diagram pull`.
 
 ## Check that it works
 
