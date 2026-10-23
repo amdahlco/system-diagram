@@ -25,6 +25,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install zizmor (pinned by hash)
-        run: python3 -m pip install --require-hashes --only-binary :all: --no-deps -r .github/zizmor-requirements.txt
+        run: |
+          python3 -m pip install --require-hashes --only-binary :all: --no-deps -r .github/zizmor-requirements.txt
       - name: Lint the workflows
         run: zizmor --offline --format plain .github/workflows
