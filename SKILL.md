@@ -90,6 +90,12 @@ same command. Nothing else is needed: no fonts, no network, no design system.
 - **Give each extra tab one job**: the build plan (`graph` + `checklist`), the numbers (`table`,
   `meter`, `stats`), a catalogue (a `table` with clickable rows). Prefer a table of numbers to a
   chart that needs a legend.
+- **Keep a graph readable.** About 12 arrows, and at most 3 leaving any one box; the build warns
+  past either. Put what feeds a node to its left, so every arrow runs the same way. Over the
+  limit, split the graph into an overview and a detail graph, or drop arrows the layout already
+  shows (a box under a "Go live" column needs no arrow to say it comes first). The 12-arrow
+  budget and the right-angle and hop rules come from the diagram-design skill
+  (github.com/cathrynlavery/diagram-design, MIT); the limit of 3 out of one box is ours.
 - **Plain ASCII punctuation.** No em dashes, curly quotes, arrows or middle dots (the build warns).
   Refer to people by name or "they"; never guess pronouns.
 
@@ -145,6 +151,21 @@ others will read.
 3. Update `meta.source` with the new read time. Build, check, and publish to the **same** place
    (for an Artifact: the same file path in the same session, or its `url` from another session).
 
+## When code lands against the spec
+
+A spec diagram stays a picture of the spec. Show what is built beside it, never in place of it:
+- Read what has merged and what is live: merged is not deployed, and a switch can keep built code
+  off. Name the change and its state ("switched off", "on in staging") in the sentence.
+- Built work goes in the panel, never on the box: a `built` callout labelled "Built so far". The
+  box keeps only its warning tags.
+- Where the build does something the spec does not say, add a `note` callout labelled "Built
+  differently from the spec" that names both. Keep the spec's version on the box.
+- On a build-plan node, give each change a `status` (`built` or `partly`) and say the progress in
+  `sub`, counting the two apart ("3 built, 2 partly, of 8"). Partly built never counts as built.
+- When outside work a node waited on is done, remove its box and keep its facts (what it was,
+  when it landed) in the panel of the node it fed.
+- Add the code you read, and as of when, to `meta.source`.
+
 ## When asked to simplify
 
 Run this pass, then propose the specific cuts before applying them:
@@ -153,6 +174,11 @@ Run this pass, then propose the specific cuts before applying them:
 - Rows about plumbing or the team's own monitoring: turn them into the footnote row or a tab.
 - Tabs that only list open items: move each item to the tab it affects.
 - Charts that need a legend: replace them with a table.
+- Two controls that open the same thing (a box and a strip chip for one record): keep one.
+- A list that repeats the graph (a checklist that restates its pieces): fold what only the list
+  holds into the node it belongs to, then drop the list.
+- Boxes for outside work that is done: remove them, keeping their facts in the panel of the node
+  they fed.
 Afterwards, check that the box count went down and that no fact disappeared: every merged fact is
 in a `parts` section.
 
@@ -170,6 +196,10 @@ blocks a build. Only inline fonts whose licence allows it. The format is in
 
 ## Limits
 
-- The graph layout is by hand: you give each node a `lane` and `row`.
+- The graph layout is by hand: you give each node a `lane` and `row`. The arrows route
+  themselves; the gap beside a column widens to up to four lanes, and when arrows run out of
+  lanes two can share one. The checker reports that; move a box or split the graph.
+- A graph of 5 columns with arrows turning between them is about 1,000 to 1,100 px wide, so it
+  can scroll sideways on a laptop. 4 columns fit.
 - The data is static. For new numbers, rebuild and republish.
 - On a phone the journey grid scrolls sideways inside its box, by design.

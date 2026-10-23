@@ -48,6 +48,7 @@ KEYS = {
     'panel': {'tag', 'title', 'text', 'callouts', 'refs', 'sections', 'where', 'notes', 'bullets', 'bulletsTitle', 'list', 'listTitle', 'links', 'linksTitle', 'foot'},
     'part': {'title', 'text', 'where', 'notes', 'bullets', 'tone', 'label'},
     'callout': {'label', 'text', 'tone'},
+    'bullet': {'text', 'sub', 'status'},
     'flag': {'n', 'h', 'p', 'src'},
     'node': {'id', 'title', 'short', 'sub', 'lane', 'row', 'rows', 'style', 'lines', 'refLabel', 'refSub', 'panel'},
     'row': {'id', 'label', 'cells', 'panel'},
@@ -230,8 +231,11 @@ def scope_words(path):
 def check_bullets(ck, v, where):
     for i, b in enumerate(ck.lst(v, where)):
         if isinstance(b, dict):
+            ck.obj(b, f'{where}[{i}]', 'bullet')
             ck.text(b.get('text'), f'{where}[{i}].text', required=True)
             ck.text(b.get('sub'), f'{where}[{i}].sub')
+            if b.get('status') not in (None, 'built', 'partly'):
+                ck.err(f'{where}[{i}].status', 'status is "built", "partly" or absent')
         else:
             ck.text(b, f'{where}[{i}]')
 
@@ -241,7 +245,7 @@ def check_callouts(ck, v, where):
         if ck.obj(c, f'{where}[{i}]', 'callout'):
             ck.text(c.get('text'), f'{where}[{i}].text', required=True, list_ok=True)
             ck.text(c.get('label'), f'{where}[{i}].label')
-            ck.tone(c.get('tone'), f'{where}[{i}]', ['wait', 'gap', 'note'])
+            ck.tone(c.get('tone'), f'{where}[{i}]', ['wait', 'gap', 'note', 'built'])
 
 
 def check_parts(ck, v, where):
@@ -250,7 +254,7 @@ def check_parts(ck, v, where):
             ck.text(s.get('title'), f'{where}[{i}].title')
             ck.text(s.get('label'), f'{where}[{i}].label')
             ck.text(s.get('text'), f'{where}[{i}].text', list_ok=True)
-            ck.tone(s.get('tone'), f'{where}[{i}]', ['wait', 'gap'])
+            ck.tone(s.get('tone'), f'{where}[{i}]', ['wait', 'gap', 'built'])
             for k in ('where', 'notes'):
                 for j, x in enumerate(ck.lst(s.get(k), f'{where}[{i}].{k}')):
                     ck.text(x, f'{where}[{i}].{k}[{j}]')
@@ -417,6 +421,9 @@ def check_graph(ck, s, sw):
     if div is not None and ck.obj(div, f'{sw}.divider'):
         ck.number(div.get('beforeRow'), f'{sw}.divider.beforeRow', 0, integer=True)
         ck.text(div.get('label'), f'{sw}.divider.label')
+    # a box is colWidth - 20 px wide; about 22 characters fit the default 175 px
+    cw = s.get('colWidth') if isinstance(s.get('colWidth'), (int, float)) else 195
+    fit = max(8, round((cw - 41) / 7))
     taken = {}
     nid = set()
     lanes_of = {n.get('id'): n.get('lane') for n in nodes if isinstance(n, dict) and isinstance(n.get('id'), str) and isinstance(n.get('lane'), int)}
@@ -433,8 +440,8 @@ def check_graph(ck, s, sw):
         for j, x in enumerate(ck.lst(n.get('lines'), f'{nw}.lines')):
             ck.text(x, f'{nw}.lines[{j}]')
         shown = n.get('short') or n.get('title')
-        if isinstance(shown, str) and len(shown) > 22:
-            ck.warn(f'{nw}', f'"{shown}" is {len(shown)} characters; about 22 fit in a node. Add "short".')
+        if isinstance(shown, str) and len(shown) > fit:
+            ck.warn(f'{nw}', f'"{shown}" is {len(shown)} characters; about {fit} fit in a node this wide. Add "short".')
         ok_lane = ck.number(n.get('lane'), f'{nw}.lane', 0, integer=True)
         ok_row = ck.number(n.get('row'), f'{nw}.row', 0, integer=True)
         rows = n.get('rows', 1)
@@ -460,8 +467,21 @@ def check_graph(ck, s, sw):
         ends = [e.get('from'), e.get('to')]
         if not all(isinstance(x, str) for x in ends) or not all(x in nid for x in ends):
             ck.err(f'{sw}.edges[{i}]', f'{json.dumps(ends[0])} -> {json.dumps(ends[1])} names a node that is not in this graph')
+        elif ends[0] == ends[1]:
+            ck.warn(f'{sw}.edges[{i}]', f'an arrow from "{ends[0]}" to itself is not drawn')
         elif lanes_of.get(ends[1], 0) < lanes_of.get(ends[0], 0):
             ck.warn(f'{sw}.edges[{i}]', f'"{ends[1]}" sits left of "{ends[0]}", so the arrow runs backwards; put what feeds a node to its left')
+    # a graph stays readable at about 12 arrows (the budget from diagram-design) and 3 out of any one box (ours)
+    gedges = [e for e in (s.get('edges') or []) if isinstance(e, dict)]
+    if len(gedges) > 12:
+        ck.warn(f'{sw}.edges', f'{len(gedges)} arrows; over about 12 a graph stops reading. Split it into an overview and a detail graph, or drop arrows the layout already shows')
+    outs = {}
+    for e in gedges:
+        if isinstance(e.get('from'), str):
+            outs[e['from']] = outs.get(e['from'], 0) + 1
+    for k, c in outs.items():
+        if c > 3:
+            ck.warn(f'{sw}.edges', f'{c} arrows leave "{k}"; over 3 read as a tangle. Add a hub node they share, or split the graph')
 
 
 def check_table(ck, s, sw, rows_out):

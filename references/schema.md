@@ -123,7 +123,7 @@ inside its own box, by design, and a hint line shows above it.
 - `optional: true` draws the box dashed with an "optional" line (after the tag, if it has one).
   Use it only when the source calls the step optional.
 - `callouts`: highlighted lines in the panel, `{ label, text, tone }`; tone `wait` (the default),
-  `gap` or `note`.
+  `gap`, `note` or `built` (green: what is already built, for a spec whose code is landing).
 - `refs`: ids of graph nodes or table rows on other tabs (the build piece, a catalogue row). They
   show as links after the plain sentence and callouts, and the target's panel lists the boxes
   (and the panels) that point at it. `refs` never point at boxes or chips; use
@@ -132,8 +132,8 @@ inside its own box, by design, and a hint line shows above it.
   bold and code marks are dropped.
 - `notes`: bullet points under "Notes".
 - `parts`: for a merged box, one section per box it replaced, each `{ title, text, where, notes,
-  bullets }`. `tone: "gap"` or `"wait"` shows that part's text as a callout headed `label`
-  (default "Not built yet" or "Waits on"). When a box has `parts`, its own `where` and `notes`
+  bullets }`. `tone: "gap"`, `"wait"` or `"built"` shows that part's text as a callout headed
+  `label` (default "Not built yet", "Waits on" or "Built so far"). When a box has `parts`, its own `where` and `notes`
   are still shown after them; keep each fact under the part it belongs to.
 - `links`: ids of boxes or chips this box feeds or depends on. Links work both ways: listing B on
   A also lists A on B, for boxes and chips alike. Selecting a box lights up its links and fades the
@@ -171,7 +171,7 @@ heading) and `note` (a line after the section).
 | `type` | Fields |
 | --- | --- |
 | `flags` | `items: [{ n, h, p, src }]` (required). Red callouts. `n` is the number shown (default: the position); `src` says where the item comes from. |
-| `graph` | A dependency diagram. `lanes` (column labels), `nodes` (required), `edges: [{ from, to, dashed }]`, `divider: { beforeRow, label }`, `colWidth` (default 195), `rowHeight` (120), `boxHeight` (76), `aria`. |
+| `graph` | A dependency diagram. `lanes` (column labels), `nodes` (required), `edges: [{ from, to, dashed }]`, `divider: { beforeRow, label }`, `colWidth` (default 195; the box is `colWidth` - 20 px wide), `rowHeight` (120), `boxHeight` (76), `aria`. The gap beside each column is 20 px, as before, and widens only for arrows that turn in it, up to 64 px for four lanes. |
 | `table` | `columns` (required), `rows: [{ id, label, cells, panel }]` (required), `maxWidth`. A row is clickable when it has an `id` and either a `panel` or any `refs` (a box's or a panel's) that name it; its first cell becomes a button. A row with a `panel` needs an `id`. `label` is the name a `refs` link shows (default: the first cell). |
 | `bars` | `items: [{ label, value, display, note, color }]` (required; `value` a number of 0 or more), `takeaways`, `maxBar` (px, default 300). Bars scale to the largest value; the longest is `maxBar` px wide, or 40% of the screen width when that is less. `display` is shown instead of the number (for "$1.2M"). `color` defaults to `c2`. A note that does not fit beside its bar wraps under it. |
 | `stats` | `items: [{ big, text }]` (required; `big` is text or a number), up to 4 across. |
@@ -189,7 +189,7 @@ heading) and `note` (a line after the section).
   "lane": 1, "row": 0, "rows": 2, "style": "ext", "lines": ["one more line"],
   "refLabel": "Piece 1: Queue rules", "refSub": "catalogue",
   "panel": { "text": "**Needs:** the van schedule.",
-             "sections": [ { "title": "Changes", "bullets": [ { "text": "Nearest copy first", "sub": "holds/pick.py" } ] } ] } }
+             "sections": [ { "title": "Changes", "bullets": [ { "text": "Nearest copy first", "sub": "holds/pick.py", "status": "built" } ] } ] } }
 ```
 
 - `colWidth` is at least 120, `boxHeight` at least 40, and `rowHeight` at least `boxHeight` + 10.
@@ -200,12 +200,22 @@ heading) and `note` (a line after the section).
 - `style`: `ext` (dashed: outside work this plan waits on) or `gate` (filled: the go-live step).
 - `lines`: extra text lines, drawn from 80 px down, 20 px apart; give the node enough `rows` to
   hold them (the build warns).
-- `short`: a shorter title when the full one is too wide (about 22 characters fit).
+- `short`: a shorter title when the full one is too wide (about 22 characters fit the default
+  175 px box; the build scales that to your `colWidth`).
 - `refLabel` / `refSub`: how a box's `refs` link names this node (default: `title` and `sub`).
 
-Place what feeds a node to its left, so arrows do not cross boxes. An arrow to a node in the same
-column runs from the bottom of one box to the top of the other; an arrow to a column on the left
-works but warns.
+Arrows are drawn at right angles. Each one leaves and enters a box at its own point on the side and
+turns in the gap beside its column, which has up to four lanes 12 px apart. Where arrows run parallel
+they stay at least 12 px apart; when a gap runs out of lanes, two can share one, and
+`tools/check.mjs` reports it (move a box, or split the graph). An arrow that crosses a column runs
+through a gap between rows that is clear in every column it passes (or under the lowest row),
+never behind a box. Where two arrows cross, the lesser one
+hops: a dashed arrow hops a solid one, and between two of a kind the later one in `edges` hops.
+An arrow to a node in the same column runs from the bottom of one box to the top of the other,
+or round through the gap on the right when a box sits between them. Place what feeds a node to
+its left: an arrow to a column on the left works but warns. The build also warns when a graph
+has more than 12 arrows or more than 3 leave one node; split it into an overview and a detail
+graph instead.
 
 ### Table cells
 
@@ -219,7 +229,8 @@ Every `panel` (tab default, lane, foot, node, row, edge) takes the same fields, 
 `links` are replaced; the build warns):
 `tag: { text, color }`, `title`, `text` (text or a list of paragraphs), `callouts`, `refs`,
 `sections: [{ title, text, where, notes, bullets, tone, label }]`, `where`, `notes`, `bullets`
-(text or `{ text, sub }`) with `bulletsTitle`, `list: [{ b, text }]` with `listTitle`, `links`
+(text or `{ text, sub, status }`; `status` is `built` or `partly` and shows as a small mark
+before the text) with `bulletsTitle`, `list: [{ b, text }]` with `listTitle`, `links`
 with `linksTitle`, `foot`. Unknown keys are warned about and ignored; a panel never takes raw
 HTML.
 

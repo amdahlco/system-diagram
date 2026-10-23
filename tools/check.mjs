@@ -3,8 +3,8 @@
 //   node tools/check.mjs path/to/index.html [outdir]
 //
 // It clicks every box, chip, lane, node and row on every tab, follows every link in each panel,
-// and reports script errors, empty panels, tabs where nothing could be clicked, and phone-width
-// overflow (after each click too). It saves screenshots of every tab in light and dark at desktop
+// and reports script errors, empty panels, tabs where nothing could be clicked, phone-width
+// overflow (after each click too), and graph arrows drawn on top of each other or behind a box. It saves screenshots of every tab in light and dark at desktop
 // and phone width, plus the longest open panel on each tab. Exit code 1 on any problem.
 //
 // Needs Node 18+, playwright-core and a Chromium of the revision that playwright-core release
@@ -66,7 +66,7 @@ try { browser = await chromium.launch({ executablePath: findChrome() }) } catch 
   console.error(`Could not start Chromium: ${e.message.split('\n')[0]}\nInstall it with: cd ${here} && npx playwright-core install chromium\n(on Linux add --with-deps), or set CHROME_PATH to a Chromium binary.`)
   process.exit(2)
 }
-const report = { errors: [], clicked: 0, followed: 0, notClickable: [], emptyPanels: [], deadTabs: [], overflow: [], info: [], shots: [] }
+const report = { errors: [], clicked: 0, followed: 0, notClickable: [], emptyPanels: [], deadTabs: [], overflow: [], arrows: [], info: [], shots: [] }
 
 async function open(viewport, colorScheme) {
   const ctx = await browser.newContext({ viewport, colorScheme, deviceScaleFactor: 1 })
@@ -103,6 +103,36 @@ try {
   const ids = await tabIds(page)
   const on = await page.$('.view.on')
   if (!ids.length || !on) report.errors.push('the page rendered no tabs or no visible view (a blank page)')
+  await ctx.close()
+}
+
+// 0b. graphs: no arrow drawn on top of another, and none passing behind a box. It samples each
+// arrow every 1.5 px and counts the points where another arrow runs parallel within 2.5 px; a
+// crossing is not parallel, so only a shared run of more than 12 px counts.
+{
+  const { ctx, page } = await open({ width: 1440, height: 1000 }, 'light')
+  for (const id of await tabIds(page)) {
+    await clickTab(page, id)
+    const found = await page.evaluate(() => {
+      const out = []
+      document.querySelectorAll('.view.on svg').forEach((svg, gi) => {
+        const arrows = [...svg.querySelectorAll('path.svg-e')]
+        if (!arrows.length) return
+        const boxes = [...svg.querySelectorAll('rect.box')].map((r) => r.getBBox())
+        const pts = arrows.map((p) => { const len = p.getTotalLength(), a = []; for (let t = 0; t <= len; t += 1.5) { const q = p.getPointAtLength(t), r = p.getPointAtLength(Math.min(len, t + 1)), d = Math.hypot(r.x - q.x, r.y - q.y) || 1; a.push([q.x, q.y, t, len, (r.x - q.x) / d, (r.y - q.y) / d]) } return a })
+        for (let i = 0; i < pts.length; i++) {
+          if (pts[i].some(([x, y, t, len]) => t > 2 && t < len - 8 && boxes.some((b) => x > b.x + 2 && x < b.x + b.width - 2 && y > b.y + 2 && y < b.y + b.height - 2))) out.push(`graph ${gi + 1}: arrow ${i + 1} passes behind a box`)
+          for (let j = i + 1; j < pts.length; j++) {
+            let n = 0
+            for (const [x, y, , , dx, dy] of pts[i]) if (pts[j].some(([u, v, , , ex, ey]) => Math.abs(u - x) < 2.5 && Math.abs(v - y) < 2.5 && Math.abs(dx * ey - dy * ex) < 0.35)) n++
+            if (n * 1.5 > 12) out.push(`graph ${gi + 1}: arrows ${i + 1} and ${j + 1} run on top of each other for about ${Math.round(n * 1.5)} px`)
+          }
+        }
+      })
+      return out
+    })
+    for (const f of found) report.arrows.push(`#${id} ${f}`)
+  }
   await ctx.close()
 }
 
@@ -202,8 +232,8 @@ for (const [vname, viewport] of [['desktop', { width: 1440, height: 1000 }], ['p
   fs.rmSync(pageFile, { force: true })
 }
 fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2))
-const problems = [...report.errors, ...report.emptyPanels, ...report.notClickable, ...report.deadTabs, ...report.overflow]
-console.log(`clicked ${report.clicked}, followed ${report.followed} links; ${report.errors.length} script errors, ${report.emptyPanels.length} empty panels, ${report.notClickable.length} could not be clicked, ${report.deadTabs.length} dead tabs, ${report.overflow.length} overflow; ${report.shots.length} screenshots in ${out}`)
+const problems = [...report.errors, ...report.emptyPanels, ...report.notClickable, ...report.deadTabs, ...report.overflow, ...report.arrows]
+console.log(`clicked ${report.clicked}, followed ${report.followed} links; ${report.errors.length} script errors, ${report.emptyPanels.length} empty panels, ${report.notClickable.length} could not be clicked, ${report.deadTabs.length} dead tabs, ${report.overflow.length} overflow, ${report.arrows.length} arrow problems; ${report.shots.length} screenshots in ${out}`)
 for (const e of problems) console.log('  -', e)
 for (const i of report.info) console.log('  info:', i)
 process.exit(problems.length ? 1 : 0)
