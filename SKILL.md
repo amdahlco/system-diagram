@@ -199,5 +199,7 @@ blocks a build. Only inline fonts whose licence allows it. The format is in
 - The graph layout is by hand: you give each node a `lane` and `row`. The arrows route
   themselves; the gap beside a column widens to up to four lanes, and when arrows run out of
   lanes two can share one. The checker reports that; move a box or split the graph.
+- A graph of 5 columns with arrows turning between them is about 1,000 to 1,100 px wide, so it
+  can scroll sideways on a laptop. 4 columns fit.
 - The data is static. For new numbers, rebuild and republish.
 - On a phone the journey grid scrolls sideways inside its box, by design.

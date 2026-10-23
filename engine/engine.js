@@ -253,6 +253,7 @@
     if (c.b) inner = `<b>${inner}</b>`
     return `<td${cls ? ` class="${cls}"` : ''}>${inner}</td>`
   }
+  const GRAPH_LAYOUT = new Map()
   function graphHTML(s, key) {
     const nodes = arr(s.nodes).filter((n) => Number.isInteger(n.lane) && Number.isInteger(n.row) && n.lane >= 0 && n.row >= 0)
     if (!nodes.length) return ''
@@ -278,17 +279,22 @@
       return { X, N, width: x, bottom, R: graphRoutes(N, eds, { W, BH, LANE, bottom, gl: (gi) => X[gi] + W, k }) }
     }
     // route with four lanes in every gap, then narrow each gap to the lanes it used; a gap where
-    // that makes arrows overlap gets a lane back, and if overlaps remain the wide layout is kept
-    const wide = layout(new Array(nl).fill(4))
-    let lay = wide
-    let k = wide.R.used.slice()
-    for (let t = 0; t < 5; t++) {
-      const tryLay = layout(k)
-      if (tryLay.R.clash <= wide.R.clash) { lay = tryLay; break }
-      const grow = tryLay.R.tight.filter((gi) => k[gi] < 4)
-      if (!grow.length) break
-      k = k.slice()
-      for (const gi of grow) k[gi]++
+    // that makes arrows overlap gets a lane back, and if overlaps remain the wide layout is kept.
+    // The data never changes, so each graph is laid out once and reused on every redraw.
+    let lay = GRAPH_LAYOUT.get(key)
+    if (!lay) {
+      const wide = layout(new Array(nl).fill(4))
+      lay = wide
+      let k = wide.R.used.slice()
+      for (let t = 0; t < 5; t++) {
+        const tryLay = layout(k)
+        if (tryLay.R.clash <= wide.R.clash) { lay = tryLay; break }
+        const grow = tryLay.R.tight.filter((gi) => k[gi] < 4)
+        if (!grow.length) break
+        k = k.slice()
+        for (const gi of grow) k[gi]++
+      }
+      GRAPH_LAYOUT.set(key, lay)
     }
     const { X, N, width, bottom } = lay
     const routes = lay.R
@@ -419,7 +425,9 @@
     const gapOf = (x) => k.findIndex((kk, gi) => x > gl(gi) && x < gl(gi) + 28 + LANE * 3)
     for (const e of E) {
       for (const q of e.pts) low = Math.max(low, q[1])
-      for (const sg of segsOf(e.pts)) if (!sg.h) { const gi = gapOf(sg.c); if (gi >= 0) used[gi].add(Math.round(sg.c)) }
+      // a gap where an arrow turns to end on a box's right side keeps two lanes, so its last leg is
+      // long enough that the arrowhead does not sit on the corner
+      for (const sg of segsOf(e.pts)) if (!sg.h) { const gi = gapOf(sg.c); if (gi >= 0) { used[gi].add(Math.round(sg.c)); if (e.kind === 'side' || e.kind === 'back') used[gi].add('r') } }
       const c = clash(e.pts, e)
       total += c
       if (c) for (const q of e.pts) { const gi = gapOf(q[0]); if (gi >= 0) tight.add(gi) }
