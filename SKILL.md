@@ -197,7 +197,7 @@ blocks a build. Only inline fonts whose licence allows it. The format is in
 ## Limits
 
 - The graph layout is by hand: you give each node a `lane` and `row`. The arrows route
-  themselves; the gap beside a column has four lanes, and when arrows run out of lanes two can
-  share one. The checker reports that; move a box or split the graph.
+  themselves; the gap beside a column widens to up to four lanes, and when arrows run out of
+  lanes two can share one. The checker reports that; move a box or split the graph.
 - The data is static. For new numbers, rebuild and republish.
 - On a phone the journey grid scrolls sideways inside its box, by design.

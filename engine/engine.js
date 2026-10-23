@@ -256,21 +256,43 @@
   function graphHTML(s, key) {
     const nodes = arr(s.nodes).filter((n) => Number.isInteger(n.lane) && Number.isInteger(n.row) && n.lane >= 0 && n.row >= 0)
     if (!nodes.length) return ''
-    // A box is colWidth - 20 px wide, as it always was. GAP is the room beside each column: arrows
-    // run there at right angles, at least LANE apart, and never behind a box; where two cross, the
-    // lesser one hops (a dashed arrow, else the later one). P is the distance from column to column.
-    const GAP = 64, LANE = 12, R = 8, HOP = 5
-    const lanes = arr(s.lanes), CW = Math.max(120, num(s.colWidth, 195)), BH = num(s.boxHeight, 76), RH = Math.max(num(s.rowHeight, 120), BH + 10), W = CW - 20, P = W + GAP
+    // A box is colWidth - 20 px wide, as it always was. Arrows run in the gaps beside the columns,
+    // at right angles, at least LANE apart, and never behind a box; where two cross, the lesser one
+    // hops (a dashed arrow, else the later one). A gap holds up to four lanes and is only as wide as
+    // the lanes its arrows use: 20 px with none, as before, then 28, 40, 52 or 64 px.
+    const LANE = 12, R = 8, HOP = 5
+    const lanes = arr(s.lanes), CW = Math.max(120, num(s.colWidth, 195)), BH = num(s.boxHeight, 76), RH = Math.max(num(s.rowHeight, 120), BH + 10), W = CW - 20
     const mid = 'ar-' + key
     const div = s.divider && Number.isInteger(s.divider.beforeRow) ? s.divider : null
     const yOf = (row) => 40 + row * RH + (div && row >= div.beforeRow ? 40 : 0)
-    const N = new Map()
-    for (const n of nodes) { const x = 20 + n.lane * P, y = yOf(n.row), h = Number.isInteger(n.rows) && n.rows > 1 ? (n.rows - 1) * RH + BH : BH; N.set(n.id, { n, x, y, h }) }
-    const width = 20 + Math.max(lanes.length, ...nodes.map((n) => n.lane + 1)) * P
-    const bottom = Math.max(...[...N.values()].map((v) => v.y + v.h))
-    let height = bottom + 20
-    const routes = graphRoutes(N, arr(s.edges), { W, BH, P, LANE, bottom })
-    height = Math.max(height, routes.low + 14)
+    const nl = Math.max(lanes.length, ...nodes.map((n) => n.lane + 1))
+    const gapW = (k) => (k ? 28 + LANE * (k - 1) : 20)
+    const eds = arr(s.edges)
+    const layout = (k) => {
+      const X = []
+      let x = 20
+      for (let l = 0; l < nl; l++) { X.push(x); x += W + gapW(k[l]) }
+      const N = new Map()
+      for (const n of nodes) { const h = Number.isInteger(n.rows) && n.rows > 1 ? (n.rows - 1) * RH + BH : BH; N.set(n.id, { n, x: X[n.lane], y: yOf(n.row), h }) }
+      const bottom = Math.max(...[...N.values()].map((v) => v.y + v.h))
+      return { X, N, width: x, bottom, R: graphRoutes(N, eds, { W, BH, LANE, bottom, gl: (gi) => X[gi] + W, k }) }
+    }
+    // route with four lanes in every gap, then narrow each gap to the lanes it used; a gap where
+    // that makes arrows overlap gets a lane back, and if overlaps remain the wide layout is kept
+    const wide = layout(new Array(nl).fill(4))
+    let lay = wide
+    let k = wide.R.used.slice()
+    for (let t = 0; t < 5; t++) {
+      const tryLay = layout(k)
+      if (tryLay.R.clash <= wide.R.clash) { lay = tryLay; break }
+      const grow = tryLay.R.tight.filter((gi) => k[gi] < 4)
+      if (!grow.length) break
+      k = k.slice()
+      for (const gi of grow) k[gi]++
+    }
+    const { X, N, width, bottom } = lay
+    const routes = lay.R
+    const height = Math.max(bottom + 20, routes.low + 14)
     const edge = (r) => `<path class="svg-e${r.ed.dashed ? ' dashed' : ''}" d="${pathOf(r.pts, r.hops, R, HOP)}" marker-end="url(#${mid})"></path>`
     const box = (v) => {
       const { n, x, y, h } = v
@@ -282,7 +304,7 @@
     }
     let g = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="${plain(s.aria || s.title || 'Diagram')}">`
     g += `<defs><marker id="${mid}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path></marker></defs>`
-    g += lanes.map((l, i) => `<text class="svg-lane" x="${20 + i * P}" y="20">${plain(String(l).toUpperCase())}</text>`).join('')
+    g += lanes.map((l, i) => `<text class="svg-lane" x="${X[i]}" y="20">${plain(String(l).toUpperCase())}</text>`).join('')
     if (div) { const y = 40 + div.beforeRow * RH - 10; g += `<line class="svg-div" x1="20" x2="${width - 20}" y1="${y}" y2="${y}"></line><text class="svg-lane" x="20" y="${y + 30}">${plain(String(div.label || '').toUpperCase())}</text>` }
     g += routes.list.map(edge).join('') + [...N.values()].map(box).join('') + '</svg>'
     return `<div class="svgwrap">${g}</div>`
@@ -293,11 +315,11 @@
   // column it crosses) that keeps LANE from all of them; when none does, the one that overlaps
   // least. tools/check.mjs reports arrows that still end up on top of each other.
   function graphRoutes(N, eds, o) {
-    const { W, BH, P, LANE, bottom } = o
-    const gl = (g) => 20 + g * P + W   // the left edge of the gap right of column g
-    // four lanes in a gap, 12 px apart, middle ones first; an arrow that ends on a box's right side
-    // prefers the lanes away from that box, so its last segment is long enough to show the arrowhead
-    const lanesIn = (g, endsRight) => (endsRight ? [33, 21, 45, 9] : [21, 33, 9, 45]).map((d) => gl(g) + d)
+    const { W, BH, LANE, bottom, gl, k } = o
+    // up to four lanes in a gap, 12 px apart, middle ones first; an arrow that ends on a box's right
+    // side prefers the lanes away from that box, so its last segment is long enough for the arrowhead
+    const ORDER = { 1: [[9], [9]], 2: [[9, 21], [21, 9]], 3: [[21, 9, 33], [21, 33, 9]], 4: [[21, 33, 9, 45], [33, 21, 45, 9]] }
+    const lanesIn = (g, endsRight) => ORDER[Math.max(1, Math.min(4, k[g] || 1))][endsRight ? 1 : 0].map((d) => gl(g) + d)
     const E = eds.map((ed, i) => ({ ed, i, a: N.get(ed.from), b: N.get(ed.to) })).filter((e) => e.a && e.b && e.a !== e.b)
     const between = (a, b) => [...N.values()].some((v) => v.n.lane === a.n.lane && v !== a && v !== b && v.y > Math.min(a.y, b.y) && v.y < Math.max(a.y, b.y))
     const slots = new Map()
@@ -392,8 +414,16 @@
       }
       if (!moved) break
     }
-    let low = 0
-    for (const e of E) for (const q of e.pts) low = Math.max(low, q[1])
+    let low = 0, total = 0
+    const used = k.map(() => new Set()), tight = new Set()
+    const gapOf = (x) => k.findIndex((kk, gi) => x > gl(gi) && x < gl(gi) + 28 + LANE * 3)
+    for (const e of E) {
+      for (const q of e.pts) low = Math.max(low, q[1])
+      for (const sg of segsOf(e.pts)) if (!sg.h) { const gi = gapOf(sg.c); if (gi >= 0) used[gi].add(Math.round(sg.c)) }
+      const c = clash(e.pts, e)
+      total += c
+      if (c) for (const q of e.pts) { const gi = gapOf(q[0]); if (gi >= 0) tight.add(gi) }
+    }
     // hops: a dashed arrow hops a solid one; between two of a kind, the later one hops
     const segs = (e) => e.pts.slice(0, -1).map((p, k) => ({ k, x0: p[0], y0: p[1], x1: e.pts[k + 1][0], y1: e.pts[k + 1][1], h: Math.abs(e.pts[k + 1][1] - p[1]) < 0.5 }))
     const inside = (v, p, q, m) => v > Math.min(p, q) + m && v < Math.max(p, q) - m
@@ -410,7 +440,7 @@
         e1.hops.get(s1.k).push(s1.h ? vt.x0 : hz.y0)
       }
     }
-    return { list: E.sort((p, q) => p.i - q.i), low }
+    return { list: E.sort((p, q) => p.i - q.i), low, clash: total, used: used.map((u) => u.size), tight: [...tight] }
   }
   // right angles with rounded corners, and a small arc where this arrow hops another
   function pathOf(pts, hops, R, HOP) {
