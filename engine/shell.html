@@ -95,6 +95,7 @@ h1 .dot { color: var(--accent); }
 .callout { border-left: 3px solid var(--c1); background: var(--warn-soft); padding: 8px 10px; margin: 10px 0; }
 .callout.gap { border-left-color: var(--neg); background: var(--neg-soft); }
 .callout.note { border-left-color: var(--faint); background: var(--raise); }
+.callout.built { border-left-color: var(--pos); background: var(--raise); }
 .callout .k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
 .legend { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 13px; margin: 8px 0 4px; }
 .legend i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); display: inline-block; }
@@ -102,6 +103,7 @@ h1 .dot { color: var(--accent); }
 .pill { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); }
 .pill.wait { color: var(--accent-ink); }
 .pill.gap { color: var(--neg); }
+.pill.built { color: var(--pos); font-size: 10.5px; }
 .lnk { background: none; border: 0; padding: 0; color: var(--accent-ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-align: left; }
 .panel li .lnk { display: inline; }
 .rowbtn { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
@@ -125,7 +127,7 @@ h1 .dot { color: var(--accent); }
 .pc.gate text { fill: var(--bg); }
 .svg-t { font-family: var(--font-sans); font-size: 14px; font-weight: 650; fill: var(--ink); }
 .svg-s { font-family: var(--font-sans); font-size: 12px; fill: var(--muted); }
-.svg-e { fill: none; stroke: var(--ink); stroke-width: 1.3; opacity: .55; }
+.svg-e { fill: none; stroke: var(--ink); stroke-width: 1.3; opacity: .55; stroke-linejoin: round; }
 .svg-e.dashed { stroke-dasharray: 4 4; }
 .svg-lane { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; fill: var(--muted); }
 .svg-div { stroke: var(--line); }

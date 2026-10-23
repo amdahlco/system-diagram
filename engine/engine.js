@@ -64,10 +64,13 @@
   // ---------- panel ----------
   const paras = (t) => arr(t).map((x) => `<p>${fmt(x)}</p>`).join('')
   function whereHTML(list) { return list.length ? `<div class="where">${list.map((x) => `<code>${codeText(x)}</code>`).join('')}</div>` : '' }
-  function bulletsHTML(list) { return list.length ? `<ul>${list.map((b) => (b && typeof b === 'object' ? `<li>${fmt(b.text)}${b.sub ? `<span class="sub">${fmt(b.sub)}</span>` : ''}</li>` : `<li>${fmt(b)}</li>`)).join('')}</ul>` : '' }
+  // a change in a list can say how far it got; partly built is never shown as built
+  const BUILT = { built: 'Built', partly: 'Partly built' }
+  const builtPill = (st) => (BUILT[st] ? `<span class="pill built">${BUILT[st]}</span> ` : '')
+  function bulletsHTML(list) { return list.length ? `<ul>${list.map((b) => (b && typeof b === 'object' ? `<li>${builtPill(b.status)}${fmt(b.text)}${b.sub ? `<span class="sub">${fmt(b.sub)}</span>` : ''}</li>` : `<li>${fmt(b)}</li>`)).join('')}</ul>` : '' }
   function goList(ids) { const ok = ids.filter((id) => ENT.has(id)); return ok.length ? `<ul>${ok.map((id) => `<li><button class="lnk" data-go="${esc(id)}">${fmt(ENT.get(id).label)}</button></li>`).join('')}</ul>` : '' }
   function calloutHTML(c) {
-    const tone = ['wait', 'gap', 'note'].includes(c.tone) ? c.tone : 'wait'
+    const tone = ['wait', 'gap', 'note', 'built'].includes(c.tone) ? c.tone : 'wait'
     return `<div class="callout ${tone}">${c.label ? `<span class="k">${fmt(c.label)}</span>` : ''}${arr(c.text).map(fmt).join('<br>')}</div>`
   }
   // the one panel renderer; `x` holds engine-made HTML (legend, tag, after), never data
@@ -84,8 +87,8 @@
     if (refs.length) h += `<p>${refs.map((id) => { const e = ENT.get(id); return `<button class="lnk" data-go="${esc(id)}">${fmt(e.label)}</button>${e.sub ? ` <span class="mono muted">${fmt(e.sub)}</span>` : ''}` }).join('<br>')}</p>`
     if (arr(p.sections).length) {
       h += `<div class="sections">${arr(p.sections).map((s) => {
-        const tone = s.tone === 'gap' || s.tone === 'wait' ? s.tone : ''
-        const body = tone ? calloutHTML({ tone, label: s.label || (tone === 'gap' ? 'Not built yet' : 'Waits on'), text: s.text || '' }) : paras(s.text)
+        const tone = ['gap', 'wait', 'built'].includes(s.tone) ? s.tone : ''
+        const body = tone ? calloutHTML({ tone, label: s.label || { gap: 'Not built yet', wait: 'Waits on', built: 'Built so far' }[tone], text: s.text || '' }) : paras(s.text)
         return `${s.title ? `<h3>${fmt(s.title)}</h3>` : ''}${body}${whereHTML(arr(s.where))}${bulletsHTML(arr(s.notes).concat(arr(s.bullets)))}`
       }).join('')}</div>`
     }
@@ -253,29 +256,21 @@
   function graphHTML(s, key) {
     const nodes = arr(s.nodes).filter((n) => Number.isInteger(n.lane) && Number.isInteger(n.row) && n.lane >= 0 && n.row >= 0)
     if (!nodes.length) return ''
-    const lanes = arr(s.lanes), CW = Math.max(80, num(s.colWidth, 195)), BH = num(s.boxHeight, 76), RH = Math.max(num(s.rowHeight, 120), BH + 10), W = CW - 20
+    // GAP is the room between columns. Arrows run there at right angles, each in its own lane, and
+    // never behind a box; where two cross, the lesser one hops (a dashed arrow, else the later one).
+    const GAP = 40, LANE = 12, R = 8, HOP = 5
+    const lanes = arr(s.lanes), CW = Math.max(120, num(s.colWidth, 215)), BH = num(s.boxHeight, 76), RH = Math.max(num(s.rowHeight, 120), BH + 10), W = CW - GAP
     const mid = 'ar-' + key
     const div = s.divider && Number.isInteger(s.divider.beforeRow) ? s.divider : null
     const yOf = (row) => 40 + row * RH + (div && row >= div.beforeRow ? 40 : 0)
     const N = new Map()
     for (const n of nodes) { const x = 20 + n.lane * CW, y = yOf(n.row), h = Number.isInteger(n.rows) && n.rows > 1 ? (n.rows - 1) * RH + BH : BH; N.set(n.id, { n, x, y, h }) }
     const width = 20 + Math.max(lanes.length, ...nodes.map((n) => n.lane + 1)) * CW
-    const height = Math.max(...[...N.values()].map((v) => v.y + v.h)) + 20
-    const edge = (ed) => {
-      const a = N.get(ed.from), b = N.get(ed.to)
-      if (!a || !b) return ''
-      if (b.n.lane <= a.n.lane) {
-        // same column or backwards: leave from the bottom (or top) and enter the target's top (or bottom)
-        const down = b.y >= a.y + a.h
-        const x1 = a.x + W / 2, y1 = down ? a.y + a.h : a.y, x2 = b.x + W / 2, y2 = down ? b.y - 6 : b.y + b.h + 6, my = (y1 + y2) / 2
-        return `<path class="svg-e${ed.dashed ? ' dashed' : ''}" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" marker-end="url(#${mid})"></path>`
-      }
-      const sx = a.x + W, sy = a.y + a.h / 2, tx = b.x
-      // a tall target is hit level with its source, so lines stay flat
-      const ty = b.h > BH ? Math.min(Math.max(sy, b.y + 14), b.y + b.h - 14) : b.y + b.h / 2
-      const mx = (sx + tx) / 2
-      return `<path class="svg-e${ed.dashed ? ' dashed' : ''}" d="M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx - 6},${ty}" marker-end="url(#${mid})"></path>`
-    }
+    const bottom = Math.max(...[...N.values()].map((v) => v.y + v.h))
+    let height = bottom + 20
+    const routes = graphRoutes(N, arr(s.edges), { W, BH, CW, GAP, LANE, bottom })
+    height = Math.max(height, routes.low + 14)
+    const edge = (r) => `<path class="svg-e${r.ed.dashed ? ' dashed' : ''}" d="${pathOf(r.pts, r.hops, R, HOP)}" marker-end="url(#${mid})"></path>`
     const box = (v) => {
       const { n, x, y, h } = v
       const cls = 'pc' + (n.style === 'ext' || n.style === 'gate' ? ' ' + n.style : '') + (S.sel === n.id ? ' sel' : '')
@@ -288,8 +283,129 @@
     g += `<defs><marker id="${mid}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path></marker></defs>`
     g += lanes.map((l, i) => `<text class="svg-lane" x="${20 + i * CW}" y="20">${plain(String(l).toUpperCase())}</text>`).join('')
     if (div) { const y = 40 + div.beforeRow * RH - 10; g += `<line class="svg-div" x1="20" x2="${width - 20}" y1="${y}" y2="${y}"></line><text class="svg-lane" x="20" y="${y + 30}">${plain(String(div.label || '').toUpperCase())}</text>` }
-    g += arr(s.edges).map(edge).join('') + [...N.values()].map(box).join('') + '</svg>'
+    g += routes.list.map(edge).join('') + [...N.values()].map(box).join('') + '</svg>'
     return `<div class="svgwrap">${g}</div>`
+  }
+  // Where each arrow runs. It leaves and enters a box at its own point on the side, ordered by where
+  // the other end sits; it turns in the gap beside its column, and an arrow that crosses columns
+  // runs in a gap between rows that is clear in every column it passes.
+  function graphRoutes(N, eds, o) {
+    const { W, BH, CW, GAP, LANE, bottom } = o
+    const gut = (lane) => 20 + lane * CW + W + GAP / 2
+    const E = eds.map((ed, i) => ({ ed, i, a: N.get(ed.from), b: N.get(ed.to) })).filter((e) => e.a && e.b && e.a !== e.b)
+    const between = (a, b) => [...N.values()].some((v) => v.n.lane === a.n.lane && v !== a && v !== b && v.y > Math.min(a.y, b.y) && v.y < Math.max(a.y, b.y))
+    const slots = new Map()
+    const slot = (v, side, e, end, toward) => { const k = v.n.id + '|' + side; if (!slots.has(k)) slots.set(k, { v, list: [] }); slots.get(k).list.push({ e, end, toward }) }
+    for (const e of E) {
+      const { a, b } = e
+      e.kind = b.n.lane > a.n.lane ? 'fwd' : b.n.lane < a.n.lane ? 'back' : between(a, b) ? 'side' : 'col'
+      if (e.kind === 'col') continue
+      slot(a, e.kind === 'back' ? 'l' : 'r', e, 'a', b.y + b.h / 2)
+      slot(b, e.kind === 'fwd' ? 'l' : 'r', e, 'b', a.y + a.h / 2)
+    }
+    for (const { v, list } of slots.values()) {
+      list.sort((p, q) => p.toward - q.toward)
+      list.forEach((t, k) => { const y = v.y + ((k + 1) * v.h) / (list.length + 1); if (t.end === 'a') t.e.ya = y; else t.e.yb = y })
+    }
+    // a tall target (a go-live box) is hit level with its source, so those lines stay flat
+    for (const e of E) if (e.kind === 'fwd' && e.b.h > BH) e.yb = Math.min(Math.max(e.ya, e.b.y + 14), e.b.y + e.b.h - 14)
+    const vsegs = [], hsegs = []
+    let low = 0
+    const over = (p0, p1, q0, q1) => Math.min(p0, p1) - 8 < Math.max(q0, q1) && Math.max(p0, p1) + 8 > Math.min(q0, q1)
+    const laneX = (lane, y0, y1) => {
+      const m = gut(lane), x = [m, m - LANE, m + LANE].find((c) => !vsegs.some((sg) => sg.x === c && over(sg.y0, sg.y1, y0, y1)))
+      const pick = x === undefined ? m : x
+      vsegs.push({ x: pick, y0, y1 })
+      return pick
+    }
+    const inCols = (cols) => [...N.values()].filter((v) => cols.includes(v.n.lane))
+    const clear = (y, cols) => !inCols(cols).some((v) => y > v.y - 6 && y < v.y + v.h + 6)
+    const laneY = (cols, x0, x1, want) => {
+      // the clear gaps between rows in these columns, and the space under the lowest box
+      const occ = inCols(cols).map((v) => [v.y - 6, v.y + v.h + 6]).sort((p, q) => p[0] - q[0])
+      const gaps = []
+      let top = 30
+      for (const [u, v] of occ) { if (u - top > 2 * LANE) gaps.push([top, u]); top = Math.max(top, v) }
+      gaps.push([Math.max(top, bottom + 6), Math.max(top, bottom + 6) + 3 * LANE + 8])
+      gaps.sort((p, q) => Math.abs((p[0] + p[1]) / 2 - want) - Math.abs((q[0] + q[1]) / 2 - want))
+      for (const [u, v] of gaps) {
+        const c = (u + v) / 2
+        const y = [c, c - LANE, c + LANE].find((t) => t > u + 4 && t < v - 4 && !hsegs.some((sg) => sg.y === t && over(sg.x0, sg.x1, x0, x1)))
+        if (y !== undefined) { hsegs.push({ y, x0, x1 }); low = Math.max(low, y); return y }
+      }
+      const y = (gaps[0][0] + gaps[0][1]) / 2
+      low = Math.max(low, y)
+      return y
+    }
+    const range = (p, q) => { const r = []; for (let i = p; i <= q; i++) r.push(i); return r }
+    for (const e of E) {
+      const { a, b } = e
+      if (e.kind === 'col') {
+        const x = a.x + W / 2, down = b.y >= a.y
+        e.pts = down ? [[x, a.y + a.h], [x, b.y - 6]] : [[x, a.y], [x, b.y + b.h + 6]]
+        continue
+      }
+      if (e.kind === 'side') {
+        const x = laneX(a.n.lane, e.ya, e.yb)
+        e.pts = [[a.x + W, e.ya], [x, e.ya], [x, e.yb], [b.x + W + 6, e.yb]]
+        continue
+      }
+      const fwd = e.kind === 'fwd'
+      const ax = fwd ? a.x + W : a.x, bx = fwd ? b.x - 6 : b.x + W + 6
+      const g1 = fwd ? a.n.lane : a.n.lane - 1, g2 = fwd ? b.n.lane - 1 : b.n.lane
+      const cols = fwd ? range(a.n.lane + 1, b.n.lane - 1) : range(b.n.lane + 1, a.n.lane - 1)
+      if (Math.abs(e.ya - e.yb) < 1 && clear(e.ya, cols)) { e.pts = [[ax, e.ya], [bx, e.yb]]; continue }
+      if (!cols.length || clear(e.ya, cols)) {
+        const x = laneX(g2, e.ya, e.yb)
+        e.pts = [[ax, e.ya], [x, e.ya], [x, e.yb], [bx, e.yb]]
+        continue
+      }
+      const yc = laneY(cols, gut(g1), gut(g2), (e.ya + e.yb) / 2)
+      const x1 = laneX(g1, e.ya, yc), x2 = laneX(g2, yc, e.yb)
+      e.pts = [[ax, e.ya], [x1, e.ya], [x1, yc], [x2, yc], [x2, e.yb], [bx, e.yb]]
+    }
+    // drop repeated points and straight-through corners, so every segment has a length and a turn
+    for (const e of E) {
+      const p = e.pts.filter((q, k) => k === 0 || Math.hypot(q[0] - e.pts[k - 1][0], q[1] - e.pts[k - 1][1]) > 0.5)
+      e.pts = p.filter((q, k) => k === 0 || k === p.length - 1 || !((Math.abs(p[k - 1][0] - q[0]) < 0.5 && Math.abs(q[0] - p[k + 1][0]) < 0.5) || (Math.abs(p[k - 1][1] - q[1]) < 0.5 && Math.abs(q[1] - p[k + 1][1]) < 0.5)))
+    }
+    // hops: a dashed arrow hops a solid one; between two of a kind, the later one hops
+    const segs = (e) => e.pts.slice(0, -1).map((p, k) => ({ k, x0: p[0], y0: p[1], x1: e.pts[k + 1][0], y1: e.pts[k + 1][1], h: Math.abs(e.pts[k + 1][1] - p[1]) < 0.5 }))
+    const inside = (v, p, q, m) => v > Math.min(p, q) + m && v < Math.max(p, q) - m
+    for (const e of E) { e.hops = new Map(); e.segs = segs(e) }
+    for (const e1 of E) for (const e2 of E) {
+      if (e1 === e2) continue
+      const lesser = (!!e1.ed.dashed && !e2.ed.dashed) || (!!e1.ed.dashed === !!e2.ed.dashed && e1.i > e2.i)
+      if (!lesser) continue
+      for (const s1 of e1.segs) for (const s2 of e2.segs) {
+        if (s1.h === s2.h) continue
+        const hz = s1.h ? s1 : s2, vt = s1.h ? s2 : s1
+        if (!inside(vt.x0, hz.x0, hz.x1, 10) || !inside(hz.y0, vt.y0, vt.y1, 10)) continue
+        if (!e1.hops.has(s1.k)) e1.hops.set(s1.k, [])
+        e1.hops.get(s1.k).push(s1.h ? vt.x0 : hz.y0)
+      }
+    }
+    return { list: E, low }
+  }
+  // right angles with rounded corners, and a small arc where this arrow hops another
+  function pathOf(pts, hops, R, HOP) {
+    const S2 = pts.slice(0, -1).map((p, k) => { const [x0, y0] = p, [x1, y1] = pts[k + 1]; return { x0, y0, x1, y1, h: Math.abs(y1 - y0) < 0.5, len: Math.hypot(x1 - x0, y1 - y0) } }).filter((sg) => sg.len > 0.5)
+    if (!S2.length) return ''
+    const rad = [0]
+    for (let k = 1; k < S2.length; k++) rad.push(Math.min(R, S2[k - 1].len / 2, S2[k].len / 2))
+    rad.push(0)
+    const at = (sg, t) => [sg.x0 + ((sg.x1 - sg.x0) * t) / sg.len, sg.y0 + ((sg.y1 - sg.y0) * t) / sg.len]
+    const r1 = (v) => Math.round(v * 10) / 10
+    let d = `M${r1(S2[0].x0)},${r1(S2[0].y0)}`
+    S2.forEach((sg, k) => {
+      const ts = (hops.get(k) || []).map((v) => Math.abs(v - (sg.h ? sg.x0 : sg.y0))).filter((t) => t > HOP + rad[k] && t < sg.len - HOP - rad[k + 1]).sort((p, q) => p - q)
+      const sweep = sg.h ? (sg.x1 > sg.x0 ? 1 : 0) : (sg.y1 > sg.y0 ? 1 : 0)
+      for (const t of ts) { const [ax, ay] = at(sg, t - HOP), [bx, by] = at(sg, t + HOP); d += ` L${r1(ax)},${r1(ay)} A${HOP},${HOP} 0 0 ${sweep} ${r1(bx)},${r1(by)}` }
+      const [ex, ey] = at(sg, sg.len - rad[k + 1])
+      d += ` L${r1(ex)},${r1(ey)}`
+      if (k < S2.length - 1 && rad[k + 1] > 0) { const [nx, ny] = at(S2[k + 1], rad[k + 1]); d += ` Q${r1(sg.x1)},${r1(sg.y1)} ${r1(nx)},${r1(ny)}` }
+    })
+    return d
   }
   function sectionHTML(s, key) {
     let h = s.title ? `<div class="group-h">${fmt(s.title)}</div>` : ''

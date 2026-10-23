@@ -51,6 +51,7 @@
         { "id": "pickcopy", "stage": "hold", "lane": "system", "text": "Picks a copy and sets it aside",
           "plain": "When a copy is returned, the catalogue gives it to the first reader in the queue.",
           "refs": ["n-queue"],
+          "callouts": [{ "label": "Built so far", "text": "Nearest-copy picking runs at two branches; the rest still pick by date.", "tone": "built" }],
           "parts": [
             { "title": "Chooses the copy", "text": "The nearest branch with a copy on the shelf comes first." },
             { "title": "Moves it between branches", "tone": "wait", "label": "Waits on", "text": "The van schedule, which is being changed." }
@@ -100,8 +101,8 @@
           "nodes": [
             { "id": "n-van", "title": "New van schedule", "sub": "transport team", "lane": 0, "row": 0, "style": "ext",
               "panel": { "text": "The new schedule moves books between branches daily instead of twice a week." } },
-            { "id": "n-queue", "title": "1. Queue rules", "sub": "catalogue, 2 changes", "lane": 1, "row": 0, "refLabel": "Piece 1: Queue rules", "refSub": "catalogue",
-              "panel": { "text": "**Needs:** the new van schedule.", "sections": [{ "title": "Changes", "bullets": [{ "text": "Nearest copy first", "sub": "holds/pick.py" }, { "text": "Pass on after 7 days", "sub": "holds/lapse.py" }] }] } },
+            { "id": "n-queue", "title": "1. Queue rules", "sub": "1 built, 1 partly, of 2", "lane": 1, "row": 0, "refLabel": "Piece 1: Queue rules", "refSub": "catalogue",
+              "panel": { "text": "**Needs:** the new van schedule.", "sections": [{ "title": "Changes", "bullets": [{ "text": "Nearest copy first", "sub": "holds/pick.py", "status": "built" }, { "text": "Pass on after 7 days", "sub": "holds/lapse.py", "status": "partly" }] }] } },
             { "id": "n-notice", "title": "2. Ready messages", "sub": "messages, 1 change", "lane": 1, "row": 1, "refLabel": "Piece 2: Ready messages", "refSub": "messages",
               "panel": { "sections": [{ "title": "Changes", "bullets": [{ "text": "Send the text with the email", "sub": "notify/ready.py" }] }] } },
             { "id": "n-live", "title": "Go live", "sub": "a Tuesday", "lane": 2, "row": 0, "rows": 2, "style": "gate", "lines": ["Turn it on for one branch"],
@@ -109,7 +110,7 @@
             { "id": "n-signs", "title": "New desk signs", "sub": "holds up: the launch", "lane": 0, "row": 2, "style": "ext",
               "panel": { "text": "Printed signs that explain the 7-day hold." } }
           ],
-          "edges": [{ "from": "n-van", "to": "n-queue", "dashed": true }, { "from": "n-queue", "to": "n-live" }, { "from": "n-notice", "to": "n-live" }] },
+          "edges": [{ "from": "n-van", "to": "n-queue", "dashed": true }, { "from": "n-queue", "to": "n-live" }, { "from": "n-notice", "to": "n-live" }, { "from": "n-signs", "to": "n-live", "dashed": true }] },
         { "type": "checklist", "title": "The plan", "items": ["Queue rules", "Ready messages", { "text": "**Go live:** one branch, then all", "go": true }] },
         { "type": "pills", "title": "Later", "items": ["Holds on e-books", "Pick-up lockers"] }
       ]
