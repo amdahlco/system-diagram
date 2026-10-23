@@ -24,7 +24,10 @@ For a security problem, do not open an issue. See `SECURITY.md`.
 3. If you change the data format, update `references/schema.md` and, where it helps, the example
    in `examples/skeleton/data.json`.
 4. Open a pull request that says what changes for a person using the skill, and how you tested
-   it. The same checks run on every pull request.
+   it. The same checks run on every pull request. For a first-time or outside contributor, a
+   maintainer reads the change and then approves the run.
+
+A maintainer reviews every pull request, and changes land as one squashed commit on `main`.
 
 Keep the page self-contained: no external scripts, fonts or network calls, and no dependencies in
 `build.py` beyond the Python standard library.
