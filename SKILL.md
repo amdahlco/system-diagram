@@ -14,7 +14,7 @@ Files: `build.py` (checks and builds), `engine/` (page shell and script), `theme
 field), `references/judge.md` (the prompt for an independent source check), `examples/skeleton/`
 (short, made up, every feature: start here).
 
-Needs only python3 to build. The checker (step 5) also needs Node 18+ with npm; if `node` is not
+Needs only python3 to build. The checker (step 5) also needs Node 20+ with npm; if `node` is not
 found, look for it under your version manager (nvm, fnm, volta, pnpm) and put it on PATH in the
 same command. Nothing else is needed: no fonts, no network, no design system.
 
