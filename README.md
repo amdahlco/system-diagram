@@ -14,22 +14,36 @@ published as an Artifact; otherwise you get the HTML file.
 
 ## Install
 
-You need `python3`. The checker also needs Node 18 or newer, with npm. Nothing else: no fonts,
-no design system, no account. Building a page needs no network.
+You need `python3`. The checker and the one-command install below need Node 20 or newer, with
+npm. Nothing else: no fonts, no design system, no account. Building a page needs no network.
 
-1. Clone this repo into your Claude Code skills folder:
+1. Add the skill, whichever way suits you:
 
-   ```bash
-   git clone https://github.com/amdahlco/system-diagram.git ~/.claude/skills/system-diagram
-   ```
+   - **Ask your agent.** Open
+     [amdahl.ai/skills/amdahl/system-diagram](https://amdahl.ai/skills/amdahl/system-diagram),
+     hand your agent the prompt there, and ask it to install for every project (`-g`). It
+     installs the skill in `~/.claude/skills/system-diagram`, where the steps below look for it.
+   - **One command.** It downloads the skill from amdahl.ai, checks it against the checksum
+     amdahl.ai lists, and puts it in `~/.claude/skills/system-diagram`, for every project. Add
+     `--agents` to also put a second copy in `~/.agents/skills`, for Codex, Cursor and other
+     agents; run step 2 in that copy too.
 
-   Windows (PowerShell):
+     ```bash
+     npx amdahl skills add amdahl/system-diagram -g
+     ```
 
-   ```powershell
-   git clone https://github.com/amdahlco/system-diagram.git $HOME\.claude\skills\system-diagram
-   ```
+   - **Git.** Clone this repo into your Claude Code skills folder. If that folder already exists,
+     move it away first.
 
-   If that folder already exists, move it away first.
+     ```bash
+     git clone https://github.com/amdahlco/system-diagram.git ~/.claude/skills/system-diagram
+     ```
+
+     Windows (PowerShell):
+
+     ```powershell
+     git clone https://github.com/amdahlco/system-diagram.git $HOME\.claude\skills\system-diagram
+     ```
 
 2. Set up the checker. Do this once per machine.
 
@@ -57,7 +71,10 @@ no design system, no account. Building a page needs no network.
 
 3. Start a new Claude Code session. The skill loads when you ask for it.
 
-To get updates later: `git -C ~/.claude/skills/system-diagram pull`.
+To get updates later, run the same `npx` command with `--force`, then run `npm ci` in `tools`
+again (it replaces the whole folder; Chromium stays in Playwright's cache). `--force` also
+replaces an earlier clone, `.git` included. To update a clone instead:
+`git -C ~/.claude/skills/system-diagram pull`.
 
 ## Check that it works
 
