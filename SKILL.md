@@ -93,8 +93,9 @@ same command. Nothing else is needed: no fonts, no network, no design system.
 - **Keep a graph readable.** About 12 arrows, and at most 3 leaving any one box; the build warns
   past either. Put what feeds a node to its left, so every arrow runs the same way. Over the
   limit, split the graph into an overview and a detail graph, or drop arrows the layout already
-  shows (a box under a "Go live" column needs no arrow to say it comes first). These rules come
-  from the diagram-design skill (github.com/cathrynlavery/diagram-design, MIT).
+  shows (a box under a "Go live" column needs no arrow to say it comes first). The 12-arrow
+  budget and the right-angle and hop rules come from the diagram-design skill
+  (github.com/cathrynlavery/diagram-design, MIT); the limit of 3 out of one box is ours.
 - **Plain ASCII punctuation.** No em dashes, curly quotes, arrows or middle dots (the build warns).
   Refer to people by name or "they"; never guess pronouns.
 
@@ -196,6 +197,7 @@ blocks a build. Only inline fonts whose licence allows it. The format is in
 ## Limits
 
 - The graph layout is by hand: you give each node a `lane` and `row`. The arrows route
-  themselves; the gap beside a column holds three arrow lanes before arrows share one.
+  themselves; the gap beside a column has four lanes, and when arrows run out of lanes two can
+  share one. The checker reports that; move a box or split the graph.
 - The data is static. For new numbers, rebuild and republish.
 - On a phone the journey grid scrolls sideways inside its box, by design.

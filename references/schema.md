@@ -171,7 +171,7 @@ heading) and `note` (a line after the section).
 | `type` | Fields |
 | --- | --- |
 | `flags` | `items: [{ n, h, p, src }]` (required). Red callouts. `n` is the number shown (default: the position); `src` says where the item comes from. |
-| `graph` | A dependency diagram. `lanes` (column labels), `nodes` (required), `edges: [{ from, to, dashed }]`, `divider: { beforeRow, label }`, `colWidth` (default 215: a 175 px box and a 40 px gap for arrows), `rowHeight` (120), `boxHeight` (76), `aria`. |
+| `graph` | A dependency diagram. `lanes` (column labels), `nodes` (required), `edges: [{ from, to, dashed }]`, `divider: { beforeRow, label }`, `colWidth` (default 195; the box is `colWidth` - 20 px wide, and a 64 px gap beside each column holds the arrows), `rowHeight` (120), `boxHeight` (76), `aria`. |
 | `table` | `columns` (required), `rows: [{ id, label, cells, panel }]` (required), `maxWidth`. A row is clickable when it has an `id` and either a `panel` or any `refs` (a box's or a panel's) that name it; its first cell becomes a button. A row with a `panel` needs an `id`. `label` is the name a `refs` link shows (default: the first cell). |
 | `bars` | `items: [{ label, value, display, note, color }]` (required; `value` a number of 0 or more), `takeaways`, `maxBar` (px, default 300). Bars scale to the largest value; the longest is `maxBar` px wide, or 40% of the screen width when that is less. `display` is shown instead of the number (for "$1.2M"). `color` defaults to `c2`. A note that does not fit beside its bar wraps under it. |
 | `stats` | `items: [{ big, text }]` (required; `big` is text or a number), up to 4 across. |
@@ -200,13 +200,16 @@ heading) and `note` (a line after the section).
 - `style`: `ext` (dashed: outside work this plan waits on) or `gate` (filled: the go-live step).
 - `lines`: extra text lines, drawn from 80 px down, 20 px apart; give the node enough `rows` to
   hold them (the build warns).
-- `short`: a shorter title when the full one is too wide (about 22 characters fit).
+- `short`: a shorter title when the full one is too wide (about 22 characters fit the default
+  175 px box; the build scales that to your `colWidth`).
 - `refLabel` / `refSub`: how a box's `refs` link names this node (default: `title` and `sub`).
 
 Arrows are drawn at right angles. Each one leaves and enters a box at its own point on the side and
-turns in the gap beside its column, which holds three arrow lanes before arrows share one. An
-arrow that crosses a column runs through a gap between rows that is clear in every column it
-passes (or under the lowest row), never behind a box. Where two arrows cross, the lesser one
+turns in the gap beside its column, which has four lanes 12 px apart. Where arrows run parallel
+they stay at least 12 px apart; when a gap runs out of lanes, two can share one, and
+`tools/check.mjs` reports it (move a box, or split the graph). An arrow that crosses a column runs
+through a gap between rows that is clear in every column it passes (or under the lowest row),
+never behind a box. Where two arrows cross, the lesser one
 hops: a dashed arrow hops a solid one, and between two of a kind the later one in `edges` hops.
 An arrow to a node in the same column runs from the bottom of one box to the top of the other,
 or round through the gap on the right when a box sits between them. Place what feeds a node to
