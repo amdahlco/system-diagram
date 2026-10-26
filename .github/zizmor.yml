@@ -1,0 +1,6 @@
+# zizmor configuration: every action must be pinned to a full commit hash.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": hash-pin
