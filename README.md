@@ -14,7 +14,7 @@ published as an Artifact; otherwise you get the HTML file.
 
 ## Install
 
-You need `python3`. The checker and the one-command install below need Node 20 or newer, with
+You need `python3`. The checker and the one-command install below need Node 22 or newer, with
 npm. Nothing else: no fonts, no design system, no account. Building a page needs no network.
 
 1. Add the skill, whichever way suits you:
