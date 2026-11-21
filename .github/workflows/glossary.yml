@@ -1,0 +1,14 @@
+name: Glossary
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  glossary:
+    uses: amdahlco/amdahl-system-map/.github/workflows/glossary-check.yml@main
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
